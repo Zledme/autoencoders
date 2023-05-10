@@ -1,6 +1,7 @@
 from autoencoder import Autoencoders
 import torchvision
 from torchvision import transforms
+import torch
 
 def train(model, optimizer, loss_fn):
 
@@ -25,7 +26,7 @@ def train(model, optimizer, loss_fn):
 
             optimizer.step()
 
-            running_loss ++ loss.item()
+            running_loss += loss.item()
             if i % 1000 == 999:
                 last_loss = running_loss / 1000 # loss per batch
                 print('  batch {} loss: {}'.format(i + 1, last_loss))
