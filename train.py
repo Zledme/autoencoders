@@ -40,7 +40,7 @@ def train_autoencoder():
     # Define a transform to convert PIL images to tensors and normalize them
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,)).
+        transforms.Normalize((0.5,), (0.5,)),
         transforms.Lambda(lambda x: torch.reshape(x, (1,)))
         ])
     # Download and load the training data
