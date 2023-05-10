@@ -26,8 +26,7 @@ def train_autoencoder():
                                         download=True, transform=transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=4,
                                             shuffle=False, num_workers=2)
-    optimizer = optim.Adam(autoencoder.parameters(), lr=lr)
-    loss_fn = nn.MSELoss()
+
 
 
     #init the model
@@ -43,6 +42,9 @@ def train_autoencoder():
     epochs = 20
     lr = 0.0005
 
+
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    loss_fn = nn.MSELoss()
 
     model.train(True)
     for epoch in range(epochs):
