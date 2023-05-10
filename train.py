@@ -1,7 +1,10 @@
 from autoencoder import Autoencoders
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 import torchvision
 from torchvision import transforms
-import torch
 
 def train(model, optimizer, loss_fn):
 
