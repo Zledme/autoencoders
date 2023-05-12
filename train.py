@@ -11,38 +11,54 @@ from tqdm import tqdm
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def train_autoencoder(model, optimzer, loss_fn, timestamp, writer, testloader, trainloader):
-    for epoch in range(epochs):
-        print("EPOCH {}".format(epoch + 1))
+class Trainer:
+    def __init__(self,epochs, batch_size, learning_rate):
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.optimizer = None
+        self.loss_fn = None
+        self.timestamp = None
+        self.writer = None
+        self.trainloader = None
+        self.trainloader = None
+        self.model = None
 
-        model.train(True)
 
-        running_loss = 0.
-        last_loss = 0.
+    def train(self):
+        self.load_data()
+        self.load_model()
+        self.others()
+        for epoch in range(self.epochs):
+            print("EPOCH {}".format(epoch + 1))
+            self.model.train(True)
 
-        pbar = tqdm(train_loader)
-        for batch in pbar:
-            inputs, labels = batch
+            running_loss = 0.
+            last_loss = 0.
 
-            inputs.to(device)
-            labels.to(device)
+            pbar = tqdm(self.trainloader)
+            for i,batch in enumerate(pbar):
+                inputs, labels = batch
 
-            optimizer.zero_grad()
+                inputs.to(device)
+                labels.to(device)
 
-            outputs = model(inputs)
+                self.optimizer.zero_grad()
 
-            loss = loss_fn(outputs,inputs)
-            loss.backward()
+                outputs = self.model(inputs)
 
-            optimizer.step()
+                loss = self.loss_fn(outputs,inputs)
+                loss.backward()
 
-            running_loss += loss.item()
-            if i % 1000 == 999:
-                last_loss = running_loss / 1000 # loss per batch
-                print('  batch {} loss: {}'.format(i + 1, last_loss))
-                tb_x = epoch * len(trainloader) + i + 1
-                writer.add_scalar('Loss/train', last_loss, tb_x)
-                running_loss = 0.
+                self.optimizer.step()
+
+                running_loss += loss.item()
+                if i % 1000 == 999:
+                    last_loss = running_loss / 1000 # loss per batch
+                    print('  batch {} loss: {}'.format(i + 1, last_loss))
+                    tb_x = epoch * len(self.trainloader) + i + 1
+                    self.writer.add_scalar('Loss/train', last_loss, tb_x)
+                    running_loss = 0.
 
         # model.train(False)
         #
@@ -68,51 +84,49 @@ def train_autoencoder(model, optimzer, loss_fn, timestamp, writer, testloader, t
         #     best_vloss = avg_vloss
         #     model_path = 'model_{}_{}'.format(timestamp)
         #     torch.save(model.state_dict(), model_path)
-    return model
 
 
-def load_model():
-    model = Autoencoders(
-            input_shape=(1, 28, 28),
-            conv_filters=(32, 64, 64, 64),
-            conv_kernels=(3, 3, 3, 3),
-            conv_strides=(1, 2, 2, 1),
-            latent_space_dim=2
-        ).to(device)
-    return model
+    def load_model(self):
+        self.model = Autoencoders(input_shape=(1, 28, 28),
+                             conv_filters=(32, 64, 64, 64),
+                             conv_kernels=(3, 3, 3, 3),
+                             conv_strides=(1, 2, 2, 1),
+                             latent_space_dim=2).to(device)
 
-def load_data(batch_size = 32):
-    # Define a transform to convert PIL images to tensors and normalize them
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-        ])
-    # Download and load the training data
-    trainset = torchvision.datasets.MNIST(root='./data',
-                                          train=True,
-                                          download=True,
-                                          transform=transform)
+    def load_data(self):
+        # Define a transform to convert PIL images to tensors and normalize them
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+            ])
+        # Download and load the training data
+        trainset = torchvision.datasets.MNIST(root='./data',
+                                              train=True,
+                                              download=True,
+                                              transform=transform)
 
-    trainloader = torch.utils.data.DataLoader(trainset,
-                                              batch_size=batch_size,
+        self.trainloader = torch.utils.data.DataLoader(trainset,
+                                              batch_size=self.batch_size,
                                               shuffle=True, num_workers=2)
 
-    # Download and load the test data
-    testset = torchvision.datasets.MNIST(root='./data',
-                                         train=False,
-                                         download=True,
-                                         transform=transform)
-    testloader = torch.utils.data.DataLoader(testset,
-                                             batch_size=batch_size,
-                                             shuffle=False,
-                                             num_workers=2)
+        # Download and load the test data
+        testset = torchvision.datasets.MNIST(root='./data',
+                                             train=False,
+                                             download=True,
+                                             transform=transform)
+
+        self.testloader = torch.utils.data.DataLoader(testset,
+                                                 batch_size=self.batch_size,
+                                                 shuffle=False,
+                                                 num_workers=2)
 
 
-    return trainloader, testloader
+    def others(self):
+        self.optimizer = optim.Adam(self.model.parameters(),
+                                    self.learning_rate)
+        self.loss_fn = nn.MSELoss()
+        self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.writer  = SummaryWriter('runs/Mnist_trainer_{}'.format(self.timestamp))
 
-def others(model,lr = 0.0005):
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.MSELoss()
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    writer  = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
-    return optimizer, loss_fn, timestamp, writer
+train = Trainer(2, 32, 0.0005)
+model = train.train()
