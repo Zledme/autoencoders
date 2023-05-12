@@ -110,10 +110,9 @@ def load_data(batch_size = 32):
 
     return trainloader, testloader
 
-def others(lr = 0.0005):
+def others(model,lr = 0.0005):
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.MSELoss()
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     writer  = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
     return optimizer, loss_fn, timestamp, writer
-
