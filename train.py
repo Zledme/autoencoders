@@ -9,48 +9,9 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def train_autoencoder():
-    # Define a transform to convert PIL images to tensors and normalize them
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-        ])
-    # Download and load the training data
-    trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                            download=True, transform=transform)
-
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
-                                              shuffle=True, num_workers=2)
-
-    # Download and load the test data
-    testset = torchvision.datasets.MNIST(root='./data', train=False,
-                                        download=True, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=4,
-                                            shuffle=False, num_workers=2)
-
-
-    #init the model
-    model = Autoencoders(
-            input_shape=(1, 28, 28),
-            conv_filters=(32, 64, 64, 64),
-            conv_kernels=(3, 3, 3, 3),
-            conv_strides=(1, 2, 2, 1),
-            latent_space_dim=2
-        ).to(device)
-
-    batch_size = 32
-    epochs = 2
-    lr = 0.0005
-
-
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.MSELoss()
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    writer  = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
-
-
+def train_autoencoder(optimzer, loss_fn, timestamp, writer):
     for epoch in range(epochs):
         print("EPOCH {}".format(epoch + 1))
 
@@ -102,11 +63,52 @@ def train_autoencoder():
         #     best_vloss = avg_vloss
         #     model_path = 'model_{}_{}'.format(timestamp)
         #     torch.save(model.state_dict(), model_path)
-
-
-
-
     return model
 
+
+def load_model():
+    model = Autoencoders(
+            input_shape=(1, 28, 28),
+            conv_filters=(32, 64, 64, 64),
+            conv_kernels=(3, 3, 3, 3),
+            conv_strides=(1, 2, 2, 1),
+            latent_space_dim=2
+        ).to(device)
+    return model
+
+def load_data(batch_size = 32):
+    # Define a transform to convert PIL images to tensors and normalize them
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5,), (0.5,))
+        ])
+    # Download and load the training data
+    trainset = torchvision.datasets.MNIST(root='./data',
+                                          train=True,
+                                          download=True,
+                                          transform=transform)
+
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=2)
+
+    # Download and load the test data
+    testset = torchvision.datasets.MNIST(root='./data',
+                                         train=False,
+                                         download=True,
+                                         transform=transform)
+    testloader = torch.utils.data.DataLoader(testset,
+                                             batch_size=batch_size,
+                                             shuffle=False,
+                                             num_workers=2)
+
+
+    return trainloader, testloader
+
+def others(lr = 0.0005):
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    loss_fn = nn.MSELoss()
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    writer  = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
+    return optimizer, loss_fn, timestamp, writer
 
 
