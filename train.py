@@ -7,11 +7,11 @@ import torchvision
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
-
+from tqdm import tqdm
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def train_autoencoder(model, optimzer, loss_fn, timestamp, writer):
+def train_autoencoder(model, optimzer, loss_fn, timestamp, writer, testloader, trainloader):
     for epoch in range(epochs):
         print("EPOCH {}".format(epoch + 1))
 
@@ -19,8 +19,13 @@ def train_autoencoder(model, optimzer, loss_fn, timestamp, writer):
 
         running_loss = 0.
         last_loss = 0.
-        for i, data in enumerate(trainloader):
-            inputs, labels = data.to(device)
+
+        pbar = tqdm(train_loader)
+        for batch in pbar:
+            inputs, labels = batch
+
+            inputs.to(device)
+            labels.to(device)
 
             optimizer.zero_grad()
 
@@ -88,7 +93,8 @@ def load_data(batch_size = 32):
                                           download=True,
                                           transform=transform)
 
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+    trainloader = torch.utils.data.DataLoader(trainset,
+                                              batch_size=batch_size,
                                               shuffle=True, num_workers=2)
 
     # Download and load the test data
@@ -110,5 +116,4 @@ def others(lr = 0.0005):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     writer  = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
     return optimizer, loss_fn, timestamp, writer
-
 
