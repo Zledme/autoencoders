@@ -11,7 +11,7 @@ from datetime import datetime
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def train_autoencoder(optimzer, loss_fn, timestamp, writer):
+def train_autoencoder(model, optimzer, loss_fn, timestamp, writer):
     for epoch in range(epochs):
         print("EPOCH {}".format(epoch + 1))
 
