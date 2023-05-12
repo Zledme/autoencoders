@@ -127,6 +127,3 @@ class Trainer:
         self.loss_fn = nn.MSELoss()
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.writer  = SummaryWriter('runs/Mnist_trainer_{}'.format(self.timestamp))
-
-train = Trainer(2, 32, 0.0005)
-model = train.train()
