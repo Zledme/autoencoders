@@ -8,6 +8,9 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 def train_autoencoder():
     # Define a transform to convert PIL images to tensors and normalize them
     transform = transforms.Compose([
@@ -35,7 +38,7 @@ def train_autoencoder():
             conv_kernels=(3, 3, 3, 3),
             conv_strides=(1, 2, 2, 1),
             latent_space_dim=2
-        )
+        ).to(device)
 
     batch_size = 32
     epochs = 2
@@ -56,7 +59,7 @@ def train_autoencoder():
         running_loss = 0.
         last_loss = 0.
         for i, data in enumerate(trainloader):
-            inputs, labels = data
+            inputs, labels = data.to(device)
 
             optimizer.zero_grad()
 
