@@ -32,7 +32,7 @@ class Autoencoders(nn.Module):
         #encoder
         self.encoder = nn.ModuleList()
 
-        last_index = self.input_shape[-1]
+        last_index = self.input_shape[0]
         for layer_index in range(self._num_conv_layers):
             layer = nn.Sequential(
                 nn.Conv2d(in_channels=last_index,
@@ -65,7 +65,8 @@ class Autoencoders(nn.Module):
                           out_channels = self.conv_outs[layer_index],
                           kernel_size = self.conv_kernels[layer_index],
                           stride = self.conv_strides[layer_index],
-                          padding = (1,1)
+                          padding = (1,1),
+                          output_padding = self.conv_strides[layer_index]-1
                           ),
                 nn.ReLU(),
                 nn.BatchNorm2d(self.conv_outs[layer_index])
@@ -78,7 +79,8 @@ class Autoencoders(nn.Module):
                       out_channels = 1,
                       kernel_size = self.conv_kernels[0],
                       stride = self.conv_strides[0],
-                      padding="same"),
+                      padding = (1,1),
+                      output_padding = 0),
             nn.Sigmoid(),
             )
         self.decoder.append(decoder_output)
@@ -96,9 +98,12 @@ class Autoencoders(nn.Module):
 
     
     def forward(self,x):
-        x = self.encoder(x)
+        for l in self.encoder:
+            x = l(x)
         x = self.bottle_neck(x)
-        x = self.decoder(x)
+
+        for i,l in enumerate(self.decoder):
+            x = l(x)
         return x
 
 

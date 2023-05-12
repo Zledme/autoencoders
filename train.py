@@ -5,14 +5,14 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 from torchvision import transforms
-
+from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
 
 def train_autoencoder():
     # Define a transform to convert PIL images to tensors and normalize them
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,)),
-        transforms.Lambda(lambda x: torch.reshape(x, (1,)))
+        transforms.Normalize((0.5,), (0.5,))
         ])
     # Download and load the training data
     trainset = torchvision.datasets.MNIST(root='./data', train=True,
@@ -28,7 +28,6 @@ def train_autoencoder():
                                             shuffle=False, num_workers=2)
 
 
-
     #init the model
     model = Autoencoders(
             input_shape=(1, 28, 28),
@@ -39,18 +38,24 @@ def train_autoencoder():
         )
 
     batch_size = 32
-    epochs = 20
+    epochs = 2
     lr = 0.0005
 
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.MSELoss()
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    writer  = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
 
-    model.train(True)
+
     for epoch in range(epochs):
+        print("EPOCH {}".format(epoch + 1))
+
+        model.train(True)
+
         running_loss = 0.
         last_loss = 0.
-        for i, data in enumerate(training_loader[:500]):
+        for i, data in enumerate(trainloader):
             inputs, labels = data
 
             optimizer.zero_grad()
@@ -66,13 +71,39 @@ def train_autoencoder():
             if i % 1000 == 999:
                 last_loss = running_loss / 1000 # loss per batch
                 print('  batch {} loss: {}'.format(i + 1, last_loss))
-                tb_x = epoch_index * len(training_loader) + i + 1
-                tb_writer.add_scalar('Loss/train', last_loss, tb_x)
+                tb_x = epoch * len(trainloader) + i + 1
+                writer.add_scalar('Loss/train', last_loss, tb_x)
                 running_loss = 0.
 
-        print(last_loss)
-    return model
+        # model.train(False)
+        #
+        # running_vloss = 0.0
+        # for i, vdata in enumerate(testloader):
+        #     vinputs, vlabels = vdata
+        #     voutputs = model(vinputs)
+        #     vloss = loss_fn(voutputs, vinputs)
+        #     running_loss += vloss
+        #
+        #     avg_vloss = running_vloss / (i + 1)
+        # print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
+        #
+        # # Log the running loss averaged per batch
+        # # for both training and validation
+        # writer.add_scalars('Training vs. Validation Loss',
+        #                 { 'Training' : avg_loss, 'Validation' : avg_vloss },
+        #                 epoch + 1)
+        # writer.flush()
+        #
+        # # Track best performance, and save the model's state
+        # if avg_vloss < best_vloss:
+        #     best_vloss = avg_vloss
+        #     model_path = 'model_{}_{}'.format(timestamp)
+        #     torch.save(model.state_dict(), model_path)
 
+
+
+
+    return model
 
 
 
