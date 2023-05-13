@@ -9,8 +9,6 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 from tqdm import tqdm
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 class Trainer:
     def __init__(self,epochs, batch_size, learning_rate):
         self.epochs = epochs
@@ -23,9 +21,10 @@ class Trainer:
         self.trainloader = None
         self.trainloader = None
         self.model = None
-
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def train(self):
+
         self.load_data()
         self.load_model()
         self.others()
@@ -40,8 +39,8 @@ class Trainer:
             for i,batch in enumerate(pbar):
                 inputs, labels = batch
 
-                inputs.to(device)
-                labels.to(device)
+                inputs = inputs.to(self.device).type(torch.cuda.FloatTensor)
+                labels = labels.to(self.device)
 
                 self.optimizer.zero_grad()
 
@@ -91,7 +90,8 @@ class Trainer:
                              conv_filters=(32, 64, 64, 64),
                              conv_kernels=(3, 3, 3, 3),
                              conv_strides=(1, 2, 2, 1),
-                             latent_space_dim=2).to(device)
+                             latent_space_dim=2)
+        self.model = self.model.to(self.device)
 
     def load_data(self):
         # Define a transform to convert PIL images to tensors and normalize them
