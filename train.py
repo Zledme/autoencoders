@@ -24,10 +24,11 @@ class Trainer:
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def train(self):
-
+        print(self.device)
         self.load_data()
         self.load_model()
         self.others()
+        self.model = self.model.to(self.device)
         for epoch in range(self.epochs):
             print("EPOCH {}".format(epoch + 1))
             self.model.train(True)
@@ -39,7 +40,7 @@ class Trainer:
             for i,batch in enumerate(pbar):
                 inputs, labels = batch
 
-                inputs = inputs.to(self.device).type(torch.cuda.FloatTensor)
+                inputs = inputs.to(self.device)
                 labels = labels.to(self.device)
 
                 self.optimizer.zero_grad()
@@ -91,7 +92,6 @@ class Trainer:
                              conv_kernels=(3, 3, 3, 3),
                              conv_strides=(1, 2, 2, 1),
                              latent_space_dim=2)
-        self.model = self.model.to(self.device)
 
     def load_data(self):
         # Define a transform to convert PIL images to tensors and normalize them
@@ -117,7 +117,7 @@ class Trainer:
 
         self.testloader = torch.utils.data.DataLoader(testset,
                                                  batch_size=self.batch_size,
-                                                 shuffle=False,
+                                                  shuffle=False,
                                                  num_workers=2)
 
 
@@ -127,3 +127,6 @@ class Trainer:
         self.loss_fn = nn.MSELoss()
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.writer  = SummaryWriter('runs/Mnist_trainer_{}'.format(self.timestamp))
+
+# trainer = Trainer(2, 32, 0.0005)
+# trainer.train()
