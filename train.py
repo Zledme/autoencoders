@@ -1,4 +1,5 @@
 from autoencoder import Autoencoders
+from vae import VariationalAE
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -23,6 +24,7 @@ class Trainer:
         self.model = None
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+        self.recon_wei = 1000
     def train(self):
         print(self.device)
         self.load_data()
@@ -45,9 +47,11 @@ class Trainer:
 
                 self.optimizer.zero_grad()
 
-                outputs = self.model(inputs)
+                outputs,log_var,mu = self.model(inputs)
 
                 loss = self.loss_fn(outputs,inputs)
+                kl_loss = -0.5 * torch.sum(1+ log_var - mu.pow(2) - torch.exp(log_var))
+                loss = self.recon_wei*loss + kl_loss
                 loss.backward()
 
                 self.optimizer.step()
@@ -87,7 +91,7 @@ class Trainer:
 
 
     def load_model(self):
-        self.model = Autoencoders(input_shape=(1, 28, 28),
+        self.model = VariationalAE(input_shape=(1, 28, 28),
                              conv_filters=(32, 64, 64, 64),
                              conv_kernels=(3, 3, 3, 3),
                              conv_strides=(1, 2, 2, 1),
@@ -128,5 +132,5 @@ class Trainer:
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.writer  = SummaryWriter('runs/Mnist_trainer_{}'.format(self.timestamp))
 
-# trainer = Trainer(2, 32, 0.0005)
-# trainer.train()
+trainer = Trainer(2, 32, 0.0005)
+trainer.train()
