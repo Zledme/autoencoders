@@ -6,9 +6,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 from torchvision import transforms
+import torchaudio
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 from tqdm import tqdm
+
+from sounddataset import transformed_Dataset
 
 class Trainer:
     def __init__(self,epochs, batch_size, learning_rate):
@@ -19,7 +22,6 @@ class Trainer:
         self.loss_fn = None
         self.timestamp = None
         self.writer = None
-        self.trainloader = None
         self.trainloader = None
         self.model = None
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -99,31 +101,44 @@ class Trainer:
 
     def load_data(self):
         # Define a transform to convert PIL images to tensors and normalize them
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
-            ])
-        # Download and load the training data
-        trainset = torchvision.datasets.MNIST(root='./data',
-                                              train=True,
-                                              download=True,
-                                              transform=transform)
+        # transform = transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.Normalize((0.5,), (0.5,))
+        #     ])
+        # # Download and load the training data
+        # trainset = torchvision.datasets.MNIST(root='./data',
+        #                                       train=True,
+        #                                       download=True,
+        #                                       transform=transform)
+        #
+        # self.trainloader = torch.utils.data.DataLoader(trainset,
+        #                                       batch_size=self.batch_size,
+        #                                       shuffle=True, num_workers=2)
+        #
+        # # Download and load the test data
+        # testset = torchvision.datasets.MNIST(root='./data',
+        #                                      train=False,
+        #                                      download=True,
+        #                                      transform=transform)
+        #
+        # self.testloader = torch.utils.data.DataLoader(testset,
+        #                                          batch_size=self.batch_size,
+        #                                           shuffle=False,
+        #                                          num_workers=2
+        Audio_file = './free-spoken-digit-dataset/recordings'
 
-        self.trainloader = torch.utils.data.DataLoader(trainset,
-                                              batch_size=self.batch_size,
-                                              shuffle=True, num_workers=2)
 
-        # Download and load the test data
-        testset = torchvision.datasets.MNIST(root='./data',
-                                             train=False,
-                                             download=True,
-                                             transform=transform)
 
-        self.testloader = torch.utils.data.DataLoader(testset,
-                                                 batch_size=self.batch_size,
-                                                  shuffle=False,
-                                                 num_workers=2)
+        mel_spectrogram = torchaudio.transforms.MelSpectrogram(
+            sample_rate=22050,
+            n_fft=1024,
+            hop_length=256,
+            n_mels=64
+        )
 
+        dataset = transformed_Dataset(Audio_file, mel_spectrogram)
+
+        self.trainloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True, num_workers=4)
 
     def others(self):
         self.optimizer = optim.Adam(self.model.parameters(),
@@ -132,5 +147,5 @@ class Trainer:
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.writer  = SummaryWriter('runs/Mnist_trainer_{}'.format(self.timestamp))
 
-trainer = Trainer(2, 32, 0.0005)
+trainer = Trainer(10, 32, 0.0005)
 trainer.train()
